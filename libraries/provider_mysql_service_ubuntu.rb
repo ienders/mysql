@@ -82,53 +82,53 @@ class Chef
             only_if "#{prefix_dir}/bin/mysql -u root -e 'show databases;'"
           end
 
-          template '/etc/mysql_grants.sql' do
-            sensitive true if sensitive_supported?
-            cookbook 'mysql'
-            source 'grants/grants.sql.erb'
-            owner 'root'
-            group 'root'
-            mode '0600'
-            variables(:config => new_resource)
-            action :create
-            notifies :run, 'execute[install-grants]'
-          end
-
-          execute 'install-grants' do
-            sensitive true if sensitive_supported?
-            cmd = "#{prefix_dir}/bin/mysql"
-            cmd << ' -u root '
-            cmd << "#{pass_string} < /etc/mysql_grants.sql"
-            command cmd
-            action :nothing
-            notifies :run, 'execute[create root marker]'
-          end
-
-          # apparmor
-          directory '/etc/apparmor.d' do
-            owner 'root'
-            group 'root'
-            mode '0755'
-            action :create
-          end
-
-          template '/etc/apparmor.d/usr.sbin.mysqld' do
-            cookbook 'mysql'
-            source 'apparmor/usr.sbin.mysqld.erb'
-            owner 'root'
-            group 'root'
-            mode '0644'
-            action :create
-            notifies :reload, 'service[apparmor-mysql]', :immediately
-          end
-
-          service 'apparmor-mysql' do
-            service_name 'apparmor'
-            action :nothing
-            supports :reload => true
-          end
-
           unless Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
+            template '/etc/mysql_grants.sql' do
+              sensitive true if sensitive_supported?
+              cookbook 'mysql'
+              source 'grants/grants.sql.erb'
+              owner 'root'
+              group 'root'
+              mode '0600'
+              variables(:config => new_resource)
+              action :create
+              notifies :run, 'execute[install-grants]'
+            end
+
+            execute 'install-grants' do
+              sensitive true if sensitive_supported?
+              cmd = "#{prefix_dir}/bin/mysql"
+              cmd << ' -u root '
+              cmd << "#{pass_string} < /etc/mysql_grants.sql"
+              command cmd
+              action :nothing
+              notifies :run, 'execute[create root marker]'
+            end
+
+            # apparmor
+            directory '/etc/apparmor.d' do
+              owner 'root'
+              group 'root'
+              mode '0755'
+              action :create
+            end
+
+            template '/etc/apparmor.d/usr.sbin.mysqld' do
+              cookbook 'mysql'
+              source 'apparmor/usr.sbin.mysqld.erb'
+              owner 'root'
+              group 'root'
+              mode '0644'
+              action :create
+              notifies :reload, 'service[apparmor-mysql]', :immediately
+            end
+
+            service 'apparmor-mysql' do
+              service_name 'apparmor'
+              action :nothing
+              supports :reload => true
+            end
+
             template '/etc/mysql/debian.cnf' do
               cookbook 'mysql'
               source 'debian/debian.cnf.erb'
