@@ -190,6 +190,11 @@ module Opscode
               '5.6' => {
                 'package_name' => 'mysql-server-5.6'
               }
+            },
+            '16.04' => {
+              '5.7' => {
+                'package_name' => 'mysql-server-5.7'
+              }
             }
           },
           'smartos' => {
