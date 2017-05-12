@@ -1,24 +1,24 @@
 module MysqlCookbook
   module Helpers
     module Debian
+
       def include_dir
-        include_dir = '/etc/mysql/conf.d'
-        include_dir
+        '/etc/mysql/conf.d'
       end
 
       def pid_file
-        pid_file = '/var/run/mysqld/mysql.pid'
-        pid_file
+        "#{run_dir}/mysql.pid"
       end
 
       def prefix_dir
-        prefix_dir = '/usr'
-        prefix_dir
+        '/usr'
       end
 
       def run_dir
-        run_dir = '/var/run/mysqld'
-        run_dir
+        if Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
+          return '/run/mysqld'
+        end
+        '/var/run/mysqld'
       end
 
       def pass_string
@@ -33,8 +33,7 @@ module MysqlCookbook
       end
 
       def socket_file
-        socket_file = '/var/run/mysqld/mysqld.sock'
-        socket_file
+        "#{run_dir}/mysqld/mysqld.sock"
       end
     end
   end
