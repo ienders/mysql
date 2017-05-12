@@ -128,84 +128,85 @@ class Chef
             supports :reload => true
           end
 
-          template '/etc/mysql/debian.cnf' do
-            cookbook 'mysql'
-            source 'debian/debian.cnf.erb'
-            owner 'root'
-            group 'root'
-            mode '0600'
-            variables(:config => new_resource)
-            action :create
-          end
-
-          #
-          directory include_dir do
-            owner 'mysql'
-            group 'mysql'
-            mode '0750'
-            recursive true
-            action :create
-          end
-
-          directory run_dir do
-            owner 'mysql'
-            group 'mysql'
-            mode '0755'
-            action :create
-            recursive true
-          end
-
-          directory new_resource.parsed_data_dir do
-            owner 'mysql'
-            group 'mysql'
-            mode '0750'
-            recursive true
-            action :create
-          end
-
-          template '/etc/mysql/my.cnf' do
-            if new_resource.parsed_template_source.nil?
-              source "#{new_resource.parsed_version}/my.cnf.erb"
+          unless Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
+            template '/etc/mysql/debian.cnf' do
               cookbook 'mysql'
-            else
-              source new_resource.parsed_template_source
+              source 'debian/debian.cnf.erb'
+              owner 'root'
+              group 'root'
+              mode '0600'
+              variables(:config => new_resource)
+              action :create
             end
-            owner 'mysql'
-            group 'mysql'
-            mode '0600'
-            variables(
-              :data_dir => new_resource.parsed_data_dir,
-              :pid_file => pid_file,
-              :socket_file => socket_file,
-              :port => new_resource.parsed_port,
-              :include_dir => include_dir,
-              :enable_utf8 => new_resource.parsed_enable_utf8
-              )
-            action :create
-            notifies :run, 'bash[move mysql data to datadir]'
-            notifies :restart, 'service[mysql]'
-          end
 
-          bash 'move mysql data to datadir' do
-            user 'root'
-            code <<-EOH
-              service mysql stop \
-              && mv /var/lib/mysql/* #{new_resource.parsed_data_dir}
-              EOH
-            action :nothing
-            creates "#{new_resource.parsed_data_dir}/ibdata1"
-            creates "#{new_resource.parsed_data_dir}/ib_logfile0"
-            creates "#{new_resource.parsed_data_dir}/ib_logfile1"
-          end
+            directory include_dir do
+              owner 'mysql'
+              group 'mysql'
+              mode '0750'
+              recursive true
+              action :create
+            end
 
-          execute 'create root marker' do
-            sensitive true if sensitive_supported?
-            cmd = '/bin/echo'
-            cmd << " '#{Shellwords.escape(new_resource.parsed_server_root_password)}'"
-            cmd << ' > /etc/.mysql_root'
-            cmd << ' ;/bin/chmod 0600 /etc/.mysql_root'
-            command cmd
-            action :nothing
+            directory run_dir do
+              owner 'mysql'
+              group 'mysql'
+              mode '0755'
+              action :create
+              recursive true
+            end
+
+            directory new_resource.parsed_data_dir do
+              owner 'mysql'
+              group 'mysql'
+              mode '0750'
+              recursive true
+              action :create
+            end
+
+            template '/etc/mysql/my.cnf' do
+              if new_resource.parsed_template_source.nil?
+                source "#{new_resource.parsed_version}/my.cnf.erb"
+                cookbook 'mysql'
+              else
+                source new_resource.parsed_template_source
+              end
+              owner 'mysql'
+              group 'mysql'
+              mode '0600'
+              variables(
+                :data_dir => new_resource.parsed_data_dir,
+                :pid_file => pid_file,
+                :socket_file => socket_file,
+                :port => new_resource.parsed_port,
+                :include_dir => include_dir,
+                :enable_utf8 => new_resource.parsed_enable_utf8
+                )
+              action :create
+              notifies :run, 'bash[move mysql data to datadir]'
+              notifies :restart, 'service[mysql]'
+            end
+
+            bash 'move mysql data to datadir' do
+              user 'root'
+              code <<-EOH
+                service mysql stop \
+                && mv /var/lib/mysql/* #{new_resource.parsed_data_dir}
+                EOH
+              action :nothing
+              creates "#{new_resource.parsed_data_dir}/ibdata1"
+              creates "#{new_resource.parsed_data_dir}/ib_logfile0"
+              creates "#{new_resource.parsed_data_dir}/ib_logfile1"
+            end
+
+            execute 'create root marker' do
+              sensitive true if sensitive_supported?
+              cmd = '/bin/echo'
+              cmd << " '#{Shellwords.escape(new_resource.parsed_server_root_password)}'"
+              cmd << ' > /etc/.mysql_root'
+              cmd << ' ;/bin/chmod 0600 /etc/.mysql_root'
+              command cmd
+              action :nothing
+            end
           end
         end
       end
