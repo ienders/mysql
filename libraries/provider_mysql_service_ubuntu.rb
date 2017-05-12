@@ -11,6 +11,13 @@ class Chef
       class Ubuntu < Chef::Provider::MysqlService
         use_inline_resources if defined?(use_inline_resources)
 
+        def upstart_or_systemd
+          if Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
+            return Chef::Provider::Service::Systemd
+          end
+          return Chef::Provider::Service::Upstart
+        end
+
         def whyrun_supported?
           true
         end
@@ -19,11 +26,6 @@ class Chef
         include Opscode::Mysql::Helpers
 
         action :create do
-          prov = Chef::Provider::Service::Upstart
-          if Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
-            prov = Chef::Provider::Service::Systemd
-          end
-
           unless sensitive_supported?
             Chef::Log.debug("Sensitive attribute disabled, chef-client version #{Chef::VERSION} is lower than 11.14.0")
           end
@@ -65,7 +67,7 @@ class Chef
 
           # service
           service 'mysql' do
-            provider prov
+            provider upstart_or_systemd
             supports :restart => true
             action [:start, :enable]
           end
@@ -210,7 +212,7 @@ class Chef
 
       action :restart do
         service 'mysql' do
-          provider prov
+          provider upstart_or_systemd
           supports :restart => true
           action :restart
         end
@@ -218,7 +220,7 @@ class Chef
 
       action :reload do
         service 'mysql' do
-          provider prov
+          provider upstart_or_systemd
           supports :reload => true
           action :reload
         end
