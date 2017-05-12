@@ -3,6 +3,12 @@ require 'shellwords'
 require_relative 'helpers'
 require_relative 'helpers_ubuntu'
 
+prov = Chef::Provider::Service::Upstart
+
+if Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
+  prov = Chef::Provider::Service::Systemd
+end
+
 class Chef
   class Provider
     class MysqlService
@@ -59,7 +65,7 @@ class Chef
 
           # service
           service 'mysql' do
-            provider Chef::Provider::Service::Upstart
+            provider prov
             supports :restart => true
             action [:start, :enable]
           end
@@ -204,7 +210,7 @@ class Chef
 
       action :restart do
         service 'mysql' do
-          provider Chef::Provider::Service::Upstart
+          provider prov
           supports :restart => true
           action :restart
         end
@@ -212,7 +218,7 @@ class Chef
 
       action :reload do
         service 'mysql' do
-          provider Chef::Provider::Service::Upstart
+          provider prov
           supports :reload => true
           action :reload
         end
