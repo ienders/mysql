@@ -3,11 +3,7 @@ require 'shellwords'
 require_relative 'helpers'
 require_relative 'helpers_ubuntu'
 
-prov = Chef::Provider::Service::Upstart
 
-if Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
-  prov = Chef::Provider::Service::Systemd
-end
 
 class Chef
   class Provider
@@ -23,6 +19,10 @@ class Chef
         include Opscode::Mysql::Helpers
 
         action :create do
+          prov = Chef::Provider::Service::Upstart
+          if Chef::VersionConstraint.new('>= 15.04').include?(node['platform_version'])
+            prov = Chef::Provider::Service::Systemd
+          end
 
           unless sensitive_supported?
             Chef::Log.debug("Sensitive attribute disabled, chef-client version #{Chef::VERSION} is lower than 11.14.0")
